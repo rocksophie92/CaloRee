@@ -1,132 +1,136 @@
 package com.example.p3750852.caloree;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import static java.lang.Integer.parseInt;
-
-
 public class MainActivity extends AppCompatActivity {
+  private static final String TAG = "MainActivity";
+  private EditText txtWeight, txtAge; // ezek elé txt vagy btn prefixeket szoktunk írni hogy egyből
+  // látsszon micsodák
+  private EditText txtCalorie;
+  private TextView txtResult;
+  private Button btnCountMale;
+  private Button btnCountFemale;
 
-    private String TAG = "MainActivity";
+  /**
+   * Static mert az osztályból semmit nem kell használnia, és amúgy is inkább utility mint
+   * állapot függvény
+   * @param age alany kora
+   * @param weight alany kövérségének numerikus kifejezése
+   * @param isMale alany péniszének egzisztencia jelzője
+   * @return egy tökéletes világban ennyit enne emberünk
+   */
+  public static double getIdealCalorie(double age, double weight, boolean isMale) {
+    float genderMultiplier = isMale ? 1.5f : 1.2f;
+    return (100 + age) * genderMultiplier + weight * 13;
+  }
 
-    EditText weight, age;
-    EditText calorie;
-    TextView result;
-    Button countMale;
-    Button countFemale;
+  private double getAvailableCalories(boolean isMale) {
+    return getIdealCalorie(getAge(), getWeight(), isMale);
+  }
 
-    final double age1 = parseInt(age.toString());
-    final double weight1 = parseInt(weight.toString());
-    double actualCalorie = Double.parseDouble(calorie.toString());
+  private double getAge() {
+    return Double.valueOf(txtAge.getText().toString());
+  }
 
-    double idealCalorieM = (100 + age1) * 1.5 + weight1 * 13;
-    double idealCalorieF = (100 + age1) * 1.2 + weight1 * 13;
+  private double getWeight() {
+    return Double.valueOf(txtWeight.getText().toString());
+  }
 
-    double availableM = idealCalorieM - actualCalorie;
-    double availableF = idealCalorieF - actualCalorie;
+  private double getActualCalorie() {
+    return Double.valueOf(txtCalorie.getText().toString());
+  }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_intake);
+  @Override protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_intake);
 
+    // Az első mindig a View-k megkeresése, addig nem használhatod őket!!
+    txtCalorie = (EditText) findViewById(R.id.calorie_text);
+    txtResult = (TextView) findViewById(R.id.result);
+    txtWeight = (EditText) findViewById(R.id.weight_text);
+    txtAge = (EditText) findViewById(R.id.age_text);
+    btnCountMale = (Button) findViewById(R.id.countM);
+    btnCountFemale = (Button) findViewById(R.id.countF);
 
-        if (weight.getText().toString().equals("")) {
-            Toast.makeText(getApplicationContext(), getString(R.string.name_error), Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        if (age.getText().toString().equals("")) {
-            Toast.makeText(getApplicationContext(), getString(R.string.name_error), Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        SharedPreferences.Editor b = getApplicationContext().getSharedPreferences(age.getText().toString(), MODE_PRIVATE).edit();
-        b.putString("Age", age.getText().toString());
-        b.apply();
-
-        SharedPreferences.Editor w = getApplicationContext().getSharedPreferences(weight.getText().toString(), MODE_PRIVATE).edit();
-        w.putString("Weight", weight.getText().toString());
-        w.apply();
-
-
-        calorie = (EditText) findViewById(R.id.calorie_text);
-
-        result = (TextView) findViewById(R.id.result);
-
-        countMale = (Button) findViewById(R.id.countM);
-        countFemale = (Button) findViewById(R.id.countF);
-
-        countMale.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //     try {
-                        CalorieTruthM();
-                        //    } catch (Exception e) {
-                        //        e.printStackTrace();
-                        //        Log.e(TAG, "fail");
-                        //    }
-                    }
-                });
-
-            }
+    btnCountMale.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View v) {
+        MainActivity.this.runOnUiThread(new Runnable() {
+          @Override public void run() {
+            CalorieTruthM();
+          }
         });
+      }
+    });
 
-
-        countFemale.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //     try {
-                        CalorieTruthF();
-                        //    } catch (Exception e) {
-                        //        e.printStackTrace();
-                        //        Log.e(TAG, "fail");
-                        //    }
-                    }
-                });
-
-            }
+    btnCountFemale.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View v) {
+        MainActivity.this.runOnUiThread(new Runnable() {
+          @Override public void run() {
+            CalorieTruthF();
+          }
         });
+      }
+    });
 
+    if (txtWeight.getText().toString().isEmpty()) {
+      Toast.makeText(getApplicationContext(), getString(R.string.name_error), Toast.LENGTH_LONG)
+          .show();
+      return;
     }
 
-
-
-    public void CalorieTruthM() {
-
-        if (actualCalorie == idealCalorieM) {
-            result.setText("You can still eat " + availableM + " calories today! Haha, you can't actually eat anything today anymore.");
-        } else if (actualCalorie < idealCalorieM) {
-            result.setText("Skinny! You can still eat like " + availableM + " calories");
-        } else if (actualCalorie > idealCalorieM) {
-            result.setText("Oops, ain't it a bit too much? Drop that fork, will you? " + availableM + " points for you!");
-        }
+    if (txtAge.getText().toString().isEmpty()) {
+      Toast.makeText(getApplicationContext(), getString(R.string.name_error), Toast.LENGTH_LONG)
+          .show();
+      return;
     }
 
-    public void CalorieTruthF() {
+    SharedPreferences.Editor b =
+        getApplicationContext().getSharedPreferences("CaloRee", MODE_PRIVATE) // itt a string a
+            // tároló nevét adja meg!
+            .edit();
+    b.putString("Age", txtAge.getText().toString());
+    b.putString("Weight", txtWeight.getText().toString());
+    b.apply(); // elég egy SharedPreferences.Editor :)
+  }
 
-        if (actualCalorie == idealCalorieF) {
-            result.setText("You can still eat " + availableF + " calories today! Haha, you can't actually eat anything today anymore.");
-        } else if (actualCalorie < idealCalorieM) {
-            result.setText("Skinny! You can still eat like " + availableF + " calories");
-        } else if (actualCalorie > idealCalorieM) {
-            result.setText("Oops, ain't it a bit too much? Drop that fork, will you? " + availableF + " points for you!");
-        }
+  public void CalorieTruthM() {
+    double availableM = getAvailableCalories(true);
+    double idealCalorieM = getIdealCalorie(getAge(), getWeight(), true);
+
+    if (getActualCalorie() == idealCalorieM) {
+      txtResult.setText("You can still eat "
+          + availableM
+          + " calories today! Haha, you can't actually eat anything today anymore.");
+    } else if (getActualCalorie() < idealCalorieM) {
+      txtResult.setText("Skinny! You can still eat like " + availableM + " calories");
+    } else if (getActualCalorie() > idealCalorieM) {
+      txtResult.setText("Oops, ain't it a bit too much? Drop that fork, will you? "
+          + availableM
+          + " points for you!");
     }
+  }
 
+  public void CalorieTruthF() {
+    double availableF = getAvailableCalories(false);
+    double idealCalorieF = getIdealCalorie(getAge(), getWeight(), false);
+
+    if (getActualCalorie() == idealCalorieF) {
+      txtResult.setText("You can still eat "
+          + availableF
+          + " calories today! Haha, you can't actually eat anything today anymore.");
+    } else if (getActualCalorie() < idealCalorieF) {
+      txtResult.setText("Skinny! You can still eat like " + availableF + " calories");
+    } else if (getActualCalorie() > idealCalorieF) {
+      txtResult.setText("Oops, ain't it a bit too much? Drop that fork, will you? "
+          + availableF
+          + " points for you!");
+    }
+  }
 }
